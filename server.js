@@ -14,22 +14,31 @@ server.route([{
     handler: (request, h) => {
         return '<h1>Hello, world!</h1>';
     }
-}, {
-    method: 'GET',
-    path: '/{name}',
-    handler: (request, h) => {
-        var name = request.params['name']
-        console.log(name)
-        return name
-    }
-}, {
+}, 
+// {
+//     method: 'GET',
+//     path: '/{name}',
+//     handler: (request, h) => {
+//         var name = request.params['name']
+//         console.log(name)
+//         return name
+//     }
+// },
+ {
     method: 'POST',
     path: '/upload_lost',
     handler: function (request, reply) {
-        var image = request.payload['image']
-        Algo.send_pic(image, 'demo_name')
+        // var image = request.payload['image']
+        console.log(request.payload['lostName'])
+        // var base64_img = request.payload['image'].toString('base64')
         // console.log(request.payload['image'])
-        reply('successful');
+        // console.log(base64_img)        
+        Algo.send_pic( request.payload['image'], 'demo_name')
+        // Algo.send_pic( base64_img, 'demo_name')
+        
+        // console.log(request.payload['image'])
+        // reply('successful');
+        return 'HH'
     }
 }]);
 
