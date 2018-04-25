@@ -10,7 +10,6 @@ var querystring = require('querystring')
 // var image1 = '123'
 // var image2
 
-
 // fs.readFile(f1, function (err, data) {
 //     if (!err) {
 //         image1 = data.toString('base64')
@@ -54,16 +53,7 @@ var querystring = require('querystring')
 //     req.end()
 // })
 
-//连接设置
-var opt = {
-    host: '120.79.57.154',
-    path: '/face_recog/',
-    method: 'POST',
-    headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        'Content-Length': 0
-    }
-}
+// //连接设置
 // var opt = {
 //     host: '120.79.57.154',
 //     path: '/face_recog/',
@@ -74,22 +64,22 @@ var opt = {
 //     }
 // }
 
-//连接回掉函数
-var req = http.request(opt, feedback => {
-    var chunks = []
-    // res.on('data' function(data))
-    feedback.on('data', function (result) {
-        // console.log(feedback.statusMessage)
-        chunks.push(result)
-        // var json = JSON.parse(result)
-        // console.log(json['detect_time'])
-    })
-        .on('end', function () {
-            let data = Buffer.concat(chunks)
-            console.log(JSON.parse(data))
-            chunks = []
-        })
-})
+// //连接回掉函数
+// var req = http.request(opt, feedback => {
+//     var chunks = []
+//     // res.on('data' function(data))
+//     feedback.on('data', function (result) {
+//         // console.log(feedback.statusMessage)
+//         chunks.push(result)
+//         // var json = JSON.parse(result)
+//         // console.log(json['detect_time'])
+//     })
+//         .on('end', function () {
+//             let data = Buffer.concat(chunks)
+//             console.log(JSON.parse(data))
+//             chunks = []
+//         })
+// })
 
 // /* 供前端使用的接口
 //  * 输入：
@@ -120,12 +110,9 @@ module.exports = {
 
         var req = http.request(opt, feedback => {
             var chunks = []
-            // res.on('data' function(data))
             feedback.on('data', function (result) {
                 // console.log(feedback.statusMessage)
                 chunks.push(result)
-                // var json = JSON.parse(result)
-                // console.log(json['detect_time'])
             })
                 .on('end', function () {
                     let data = Buffer.concat(chunks)
@@ -133,7 +120,7 @@ module.exports = {
                     chunks = []
                 })
         })
-        // opt.headers['Content-Length'] = data.length
+
         req.write(data + '\n')
         req.end()
         opt.headers['Content-Length'] = 0
