@@ -1,32 +1,15 @@
-//filesystem
-/*
-var fs = require('fs')
-var setting = fs.readFile('setting.conf')
-*/
+const mysql = require('mysql')
 
-//database
-import { createConnection } from "mysql";
-
-var connection = createConnection({
-    host: 'localhost',
-    user: 'root',
-    password: '0000',
-    database: 'face'
-})
-
-connection.connect()
-
-function getUser(name) {
-    var sql = 'SELECT * FROM User'
-    connection.query(sql, function (err, result) {
-        if (err) {
-            console.log(err.message)
-            return;
-        }
-        console.log(result)
-    })
+exports.new_lost = () => {
+    console.log('new lost')
+    return 'lost_1'
 }
 
-getUser('陈文彬')
+exports.new_clue = () => {
+    console.log('new clue')
+    return 'clue_1'
+}
 
-// connection.
+exports.new_pic = () => {
+    console.log('new picture')
+}

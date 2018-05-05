@@ -1,42 +1,49 @@
 //hapiJS
-const Hapi = require('hapi');
+const hapi = require('hapi');
 
 //调用算法的模块
-const Algo = require('./algorithm')
+const algo = require('./algorithm')
 
-const server = Hapi.server({
+//调用数据库模块
+const db = require('./db')
+
+//服务器
+const server = hapi.server({
     port: 3000,
     host: 'localhost'
 })
 
-
 server.route([
-    //测试接口
+    //上传失踪信息
     {
-        method: 'GET',
-        path: '/test/{name}',
-        handler: (request, h) => {
-            return request.params['name'];
+        method: 'POST',
+        path: '/upload_lost',
+        handler: (request, reply) => {
+            //新建失踪人口信息,获取数据库id
+            var lost_id = db.new_lost()
+            algo.upload_pic(request.payload['image'], lost_id)
+            return 'successful'
         }
     }, {
         method: 'POST',
-        path: '/upload_lost',
-        handler: function (request, reply) {
-            // var image = request.payload['image']
-            console.log(request.payload['lostName'])
-            // var base64_img = request.payload['image'].toString('base64')
-            // console.log(request.payload['image'])
-            // console.log(base64_img)        
-            Algo.send_pic(request.payload['image'], 'demo_name')
-            // Algo.send_pic( base64_img, 'demo_name')
-
-            // console.log(request.payload['image'])
-            // reply('successful');
-            return 'successful'
+        path: 'upload_clue',
+        handler: (request, reply) => {
+            //新建线索信息，获取数据库id
+            var clue_id = db.new_clue()
+            algo.upload_pic(request.payload['image'], clue_id)
         }
-    }]);
+    }, {
+        method: 'GET',
+        path: '/get_massage',
+        handler: (request, reply) => {
+            //根据用户信息获取推送消息
+        }
 
-server.start();
+    }
+]);
+
+server.start()
+console.log('server is running on port 3000.')
 
 // const init = async () => {
 
