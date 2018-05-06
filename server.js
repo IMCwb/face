@@ -16,29 +16,61 @@ const server = hapi.server({
 server.route([
     //上传失踪信息
     {
-        method: 'POST',
         path: '/upload_lost',
+        method: 'POST',
         handler: (request, reply) => {
             //新建失踪人口信息,获取数据库id
-            var lost_id = db.new_lost()
-            algo.upload_pic(request.payload['image'], lost_id)
+            var data = request.payload
+            lost_id = db.new_lost(data)
             return 'successful'
         }
-    }, {
+    },
+    //上传线索信息
+    {
+        path: '/upload_clue',
         method: 'POST',
-        path: 'upload_clue',
         handler: (request, reply) => {
-            //新建线索信息，获取数据库id
-            var clue_id = db.new_clue()
-            algo.upload_pic(request.payload['image'], clue_id)
+            //新建线索信息,将线索信息存入Clue，将图片存入Photo
+            db.new_clue(request.payload)
+            return 'successful'
         }
-    }, {
-        method: 'GET',
+    },
+
+
+
+
+    //修改失踪信息
+    {
+        path: '/modify_lost',
+        method: 'POST',
+        handler: (request, reply) => {
+            //修改时仅包含修改信息
+            var data = request.payload
+            // var clue_id = db.new_clue(data)
+            algo.upload_pic(data['image'], clue_id)
+            return 'successful'
+        }
+    },
+    //修改失踪信息
+    {
+        path: '/modify_clue',
+        method: 'POST',
+        handler: (request, reply) => {
+            //仅修改信息
+            var data = request.payload
+            var clue_id = db.new_clue(data)
+            algo.upload_pic(data['image'], clue_id)
+            return 'successful'
+        }
+
+    },
+    //推送
+    {
         path: '/get_massage',
+        method: 'GET',
         handler: (request, reply) => {
             //根据用户信息获取推送消息
         }
-
     }
 ]);
 
