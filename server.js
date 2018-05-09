@@ -1,9 +1,6 @@
 //hapiJS
 const hapi = require('hapi');
 
-//调用算法的模块
-const algo = require('./algorithm')
-
 //调用数据库模块
 const db = require('./db')
 
@@ -13,65 +10,65 @@ const server = hapi.server({
     host: 'localhost'
 })
 
-server.route([
-    //上传失踪信息
-    {
-        path: '/upload_lost',
-        method: 'POST',
-        handler: (request, reply) => {
-            //新建失踪人口信息,获取数据库id
-            var data = request.payload
-            lost_id = db.new_lost(data)
-            return 'successful'
-        }
-    },
-    //上传线索信息
-    {
-        path: '/upload_clue',
-        method: 'POST',
-        handler: (request, reply) => {
-            //新建线索信息,将线索信息存入Clue，将图片存入Photo
-            db.new_clue(request.payload)
-            return 'successful'
-        }
-    },
+function check(data, type = 'lost') {
+    return true;
+}
 
+server.route([{
+    path: '/upload_lost',
+    method: 'POST',
+    handler: (request, reply) => {
+        lost_id = db.new_lost(request.payload)
 
-
-
-    //修改失踪信息
-    {
-        path: '/modify_lost',
-        method: 'POST',
-        handler: (request, reply) => {
-            //修改时仅包含修改信息
-            var data = request.payload
-            // var clue_id = db.new_clue(data)
-            algo.upload_pic(data['image'], clue_id)
-            return 'successful'
+        if (check(data, 'lost')) {
+            return reply.response('data format error').code(500)
         }
-    },
-    //修改失踪信息
-    {
-        path: '/modify_clue',
-        method: 'POST',
-        handler: (request, reply) => {
-            //仅修改信息
-            var data = request.payload
-            var clue_id = db.new_clue(data)
-            algo.upload_pic(data['image'], clue_id)
-            return 'successful'
-        }
-
-    },
-    //推送
-    {
-        path: '/get_massage',
-        method: 'GET',
-        handler: (request, reply) => {
-            //根据用户信息获取推送消息
-        }
+        return reply.response('successful').code(200)
     }
+}, {
+    path: '/upload_clue',
+    method: 'POST',
+    handler: (request, reply) => {
+        db.__new_info(request.payload)
+        if (check(data, 'clue')) {
+            return reply.response('data format error').code(500)
+        }
+        return reply.response('successful').code(200)
+    }
+}, {
+    path: '/modify_lost',
+    method: 'POST',
+    handler: (request, reply) => {
+        lost_id = db.edit_lost(request.payload)
+        if (check(data, 'lost')) {
+            return reply.response('data format error').code(500)
+        }
+        return reply.response('successful').code(200)
+    }
+}, {
+    path: '/modify_clue',
+    method: 'POST',
+    handler: (request, reply) => {
+        lost_id = db.edit_clue(request.payload)
+        if (check(data, 'clue')) {
+            return reply.response('data format error').code(500)
+        }
+        return reply.response('successful').code(200)
+    }
+}, {
+    path: '/get_massage',
+    method: 'GET',
+    handler: (request, reply) => {
+        return reply.response('successful').code(200)
+    }
+}, {
+    //每次用户进入的时候要进行自检，检查用户的id是否插入到user表中，如果没有不能发送任何信息
+    path: '/login',
+    method: 'POST',
+    handler: (request, reply) => {
+        return reply.response('successful').code(200)
+    }
+}
 ]);
 
 server.start()

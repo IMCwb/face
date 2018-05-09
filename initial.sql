@@ -4,7 +4,7 @@ CREATE DATABASE face;
 USE face;
 
 CREATE TABLE User(
-    user_id INT UNSIGNED AUTO_INCREMENT,
+    user_id CHAR(30) NOT NULL,
     name CHAR(20) NOT NULL,
     password CHAR(20),
     location CHAR(100),
@@ -18,8 +18,8 @@ CREATE TABLE User(
 --     13416349304);
 
 CREATE TABLE Photo(
-    photo_id INT UNSIGNED,
     clue_or_lost_id BIGINT NOT NULL,
+    photo_id INT UNSIGNED,
     from_clue INT(1),
     photo MEDIUMBLOB NOT NULL,
     eigen_vector MEDIUMBLOB NOT NULL,
@@ -35,9 +35,9 @@ CREATE TABLE Photo(
 
 CREATE TABLE Clue(
     clue_id BIGINT UNSIGNED AUTO_INCREMENT,
-    provider_id CHAR(20) NOT NULL,
+    provider_id CHAR(30) NOT NULL,
     clue_location CHAR(100),
-    clue_time DATETIME,
+    -- clue_time DATETIME,
     clue_description TEXT,
     PRIMARY KEY(clue_id)
 )ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -50,7 +50,7 @@ CREATE TABLE Clue(
 
 CREATE TABLE Lost(
     lost_id BIGINT UNSIGNED AUTO_INCREMENT,
-    provider_id CHAR(20) NOT NULL,
+    provider_id CHAR(30) NOT NULL,
     /* person_id CHAR(20) NOT NULL, */
     person_location CHAR(100),
     name CHAR(20) NOT NULL,
@@ -88,3 +88,6 @@ INSERT INTO Possible_match(lost_id, clue_id, possibility) VALUES (
     1,
     96.68
 );
+
+
+#clue 加上联系人姓名和电话

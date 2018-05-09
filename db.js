@@ -1,112 +1,74 @@
 const mysql = require('mysql');
-// const algo = require('./algorithm')
 
 const http = require('http')
 const querystring = require('querystring')
-const connection_setting = {
-  host: 'localhost',
-  user: 'root',
-  password: '0000',
-  port: '3306',
-  database: 'face'
-}
 
 const HOST = '120.79.57.154'
 const PATH = '/face_recog/'
 const METHOD = 'POST'
 const TOKEN = '1b9a5c4d73b2e45ff8477e554581f1ea'
 
-const to_clue = true
-const to_lost = false
+const CLUE = true
+const LOST = false
+
+const db_pool = mysql.createPool({
+  host: 'localhost',
+  user: 'root',
+  password: '0000',
+  port: '3306',
+  database: 'face'
+})
+exports.new_user = (data) => {
+}
 
 exports.new_lost = (data) => {
-  var connection = mysql.createConnection(connection_setting)
-  connection.connect()
-
   var sql = 'INSERT INTO Lost(\
             provider_id,\
-            // person_id,\
             name, gender, birth_date, person_location,\
             contact, contact_name, lost_description, last_location,lost_date)\
             VALUES(?,?,?,?,?,?,?,?,?,?)'
 
   var params = [
-    data['provider_id'],
-
-    // data['person_id'],
-    data['name'],
-    data['gender'],
-    data['birth_date'],
-    data['person_location'],
-
-    data['contact'],
-    data['contact_name'],
-    data['lost_description'],
-    data['last_location'],
-    data['lost_date'],
+    data['provider_id'], data['name'], data['gender'], data['birth_date'], data['person_location'],
+    data['contact'], data['contact_name'], data['lost_description'], data['last_location'], data['lost_date'],
   ]
 
-  connection.query(sql, params, (err, result) => {
-    if (err) {
-      console.log('[INSERT ERROR] - ', err.message)
-      connection.end()
-    } else {
-      connection.query('SELECT @@IDENTITY', (err, result) => {
-        if (err) {
-          console.log('[FETCH ID ERROR] - ', err.message)
-          connection.end()
-        }
-        var lost_id = result[0]['@@IDENTITY']
-        connection.end()
-        var images = data['image']
-        for (var index = 0; index < images.length; index++) {
-          exports.new_pic(index.toString(), lost_id, to_lost, images[index])
-        }
-      })
-    }
-  })
+  const images = data['image']
+  exports.__new_info(sql, params, images, LOST)
 }
 
 //插入线索信息，，返回线索的id
 exports.new_clue = (data) => {
-  // connection.connect()
-  var connection = mysql.createConnection(connection_setting)
 
-  var sql = 'INSERT INTO Clue(\
-            provider_id,\
-            clue_location,clue_time,clue_description)\
-            VALUES(?,?,?,?)'
+  const sql = 'INSERT INTO Clue(provider_id, clue_location, clue_description\
+              VALUES(?,?,?);)'
+  const param = [data['provider_id'], data['clue_location'], data['clue_description']]
+  const images = data['image']
 
-  var params = [
-    data['provider_id'],
+  exports.__new_info(sql, param, images, CLUE)
+}
 
-    data['clue_location'],
-    data['clue_time'],
-    data['clue_description']
-  ]
+exports.__new_info = (sql, params, images, which) => {
+  db_pool.getConnection((con_err, connection) => {
+    connection.query(sql, params, (err, res) => {
+      if (err) {
+        console.log('[INSERT ERROR] - ', err.message)
+      } else {
+        var clue_id = res[0]['insertId']
+        //多张
+        // for (var index = 0; index < images.length; index++) {
+        //   exports.new_pic(index.toString(), clue_id, to_clue, images[index])
+        // }
 
-  connection.query(sql, params, (err, result) => {
-    if (err) {
-      console.log('[INSERT ERROR] - ', err.message)
-      connection.end()
-    } else {
-      connection.query('SELECT @@IDENTITY', (err, result) => {
-        if (err) {
-          console.log('[FETCH ID ERROR] - ', err.message)
-          connection.end()
-        }
-        var clue_id = result[0]['@@IDENTITY']
-        connection.end()
-        var images = data['image']
-        for (var index = 0; index < images.length; index++) {
-          exports.new_pic(index.toString(), clue_id, to_clue, images[index])
-        }
-      })
-    }
+        //单张
+        exports.new_pic('0', clue_id, which, images)
+      }
+    })
+    connection.release()
   })
 }
 
-exports.new_pic = (photo_id, clue_id, if_clue, photo_to_detect) => {
+exports.new_pic = (photo_id, info_id, which, photo_to_detect) => {
   photo_to_detect = photo_to_detect.toString('base64')
 
   //上传图片
@@ -136,34 +98,27 @@ exports.new_pic = (photo_id, clue_id, if_clue, photo_to_detect) => {
     }).on('end', () => {
       let res = Buffer.concat(chunks)
       res = JSON.parse(res)
-
-      //数据库操作
-      var connection = mysql.createConnection(connection_setting)
-      connection.connect()
-
-      var sql = 'INSERT INTO Photo(\
-                  photo_id,\
-                  clue_or_lost_id, from_clue,\
-                  photo, eigen_vector)\
-                  VALUES(?,?,?,?,?)'
-
-      var params = [
-        photo_id,
-        clue_id, if_clue,
-
-        photo_to_detect, res['face_list']
-      ]
-      console.log(res)
-      connection.query(sql, params, (err, result) => {
-        if (err) {
-          console.log('[INSERT ERROR] - ', err.message)
-        }
-        connection.end()
-      })
+      exports.__insert_pic(info_id, 0, which, photo_to_detect, res['face_list'])
     })
   })
   req.write(data_to_send, + '\n')
   req.end()
+}
+
+exports.__insert_pic = (info_id, index = 0, which, pic, eigen_vectors) => {
+  var sql = 'INSERT INTO Photo( photo_id, clue_or_lost_id, from_clue, photo, eigen_vector)\
+            VALUES(?,?,?,?,?);'
+
+  var params = [index, info_id, which, pic, eigen_vectors]
+
+  db_pool.getConnection((con_err, connection) => {
+    connection.query(sql, params, (err, res) => {
+      if (err) {
+        console.log('[INSERT ERROR] - ', err.message)
+      }
+    })
+    connection.release()
+  })
 }
 
 //修改线索信息，暂不包含图片的修改
@@ -207,3 +162,5 @@ exports.edit_pic = () => {
   //断开数据库连接
   connection.end();
 }
+
+//多次post没有办法保存用户的信息,除非使用缓存
