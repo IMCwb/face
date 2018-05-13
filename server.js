@@ -10,6 +10,7 @@ const server = hapi.server({
     host: 'localhost'
 })
 
+//do format check according to the type
 function check(data, type = 'lost') {
     return true;
 }
@@ -18,22 +19,23 @@ server.route([{
     path: '/upload_lost',
     method: 'POST',
     handler: (request, reply) => {
-        lost_id = db.new_lost(request.payload)
-
+        var data = request.payload
         if (check(data, 'lost')) {
-            return reply.response('data format error').code(500)
+            db.new_lost(data)
+            return reply.response('successful').code(200)
         }
-        return reply.response('successful').code(200)
+        return reply.response('data format error').code(500)
     }
 }, {
     path: '/upload_clue',
     method: 'POST',
     handler: (request, reply) => {
-        db.__new_info(request.payload)
+        var data = request.payload
         if (check(data, 'clue')) {
-            return reply.response('data format error').code(500)
+            db.new_clue(data)
+            return reply.response('successful').code(200)
         }
-        return reply.response('successful').code(200)
+        return reply.response('data format error').code(500)
     }
 }, {
     path: '/modify_lost',
@@ -41,9 +43,23 @@ server.route([{
     handler: (request, reply) => {
         lost_id = db.edit_lost(request.payload)
         if (check(data, 'lost')) {
-            return reply.response('data format error').code(500)
+            return reply.response('successful').code(200)
         }
-        return reply.response('successful').code(200)
+        return reply.response('data format error').code(500)
+    }
+}, {
+    path: '/get_lost',
+    method: 'POST',
+    handler: (request, reply) => {
+        const data = request.payload
+        return db.get_info(data, false)
+    }
+}, {
+    path: '/get_clue',
+    method: 'POST',
+    handler: (request, reply) => {
+        const data = request.payload
+        return db.get_info(data, true)
     }
 }, {
     path: '/modify_clue',
@@ -62,10 +78,11 @@ server.route([{
         return reply.response('successful').code(200)
     }
 }, {
-    //每次用户进入的时候要进行自检，检查用户的id是否插入到user表中，如果没有不能发送任何信息
     path: '/login',
     method: 'POST',
     handler: (request, reply) => {
+        const data = request.payload
+        db.new_user(data)
         return reply.response('successful').code(200)
     }
 }

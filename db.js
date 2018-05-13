@@ -1,5 +1,4 @@
-const mysql = require('mysql');
-
+const mysql = require('mysql')
 const http = require('http')
 const querystring = require('querystring')
 
@@ -18,56 +17,50 @@ const db_pool = mysql.createPool({
   port: '3306',
   database: 'face'
 })
+
 exports.new_user = (data) => {
+  db_pool.getConnection((err, connection) => {
+    connection.query(`INSERT INTO USER(user_id) VALUES(${data['OPENID']})`, (err, res) => {
+      if (err) throw err
+    })
+  })
 }
 
 exports.new_lost = (data) => {
-  var sql = 'INSERT INTO Lost(\
+  const sql = `INSERT INTO Lost(\
             provider_id,\
             name, gender, birth_date, person_location,\
             contact, contact_name, lost_description, last_location,lost_date)\
-            VALUES(?,?,?,?,?,?,?,?,?,?)'
-
-  var params = [
-    data['provider_id'], data['name'], data['gender'], data['birth_date'], data['person_location'],
-    data['contact'], data['contact_name'], data['lost_description'], data['last_location'], data['lost_date'],
-  ]
+            VALUES(
+            ${data['provider_id']},\
+            ${data['name']}, ${data['gender']},${data['birth_date']},${data['person_location']},\
+            ${data['contact']}, ${data['contact_name']}, ${data['lost_description']}, ${data['last_location']}, ${data['lost_date']})`
 
   const images = data['image']
-  exports.__new_info(sql, params, images, LOST)
+  exports.__new_info(sql, images, LOST)
 }
-
-//插入线索信息，，返回线索的id
 exports.new_clue = (data) => {
 
-  const sql = 'INSERT INTO Clue(provider_id, clue_location, clue_description\
-              VALUES(?,?,?);)'
-  const param = [data['provider_id'], data['clue_location'], data['clue_description']]
+  const sql = `INSERT INTO Clue(provider_id, clue_location, clue_description)\
+               VALUES(${data['provider_id']},${data['clue_location']},${data['clue_description']})`
   const images = data['image']
 
   exports.__new_info(sql, param, images, CLUE)
 }
-
-exports.__new_info = (sql, params, images, which) => {
+exports.__new_info = (sql, images, which) => {
   db_pool.getConnection((con_err, connection) => {
-    connection.query(sql, params, (err, res) => {
-      if (err) {
-        console.log('[INSERT ERROR] - ', err.message)
-      } else {
-        var clue_id = res[0]['insertId']
-        //多张
-        // for (var index = 0; index < images.length; index++) {
-        //   exports.new_pic(index.toString(), clue_id, to_clue, images[index])
-        // }
-
-        //单张
-        exports.new_pic('0', clue_id, which, images)
-      }
+    connection.query(sql, (err, res) => {
+      if (err) throw err
+      const clue_id = res['insertId']
+      //多张
+      // for (var index = 0; index < images.length; index++) {
+      //   exports.new_pic(index.toString(), clue_id, to_clue, images[index])
+      // }
+      exports.new_pic('0', clue_id, which, images)
     })
     connection.release()
   })
 }
-
 exports.new_pic = (photo_id, info_id, which, photo_to_detect) => {
   photo_to_detect = photo_to_detect.toString('base64')
 
@@ -98,49 +91,84 @@ exports.new_pic = (photo_id, info_id, which, photo_to_detect) => {
     }).on('end', () => {
       let res = Buffer.concat(chunks)
       res = JSON.parse(res)
+      console.log(res)
       exports.__insert_pic(info_id, 0, which, photo_to_detect, res['face_list'])
     })
   })
   req.write(data_to_send, + '\n')
   req.end()
 }
-
 exports.__insert_pic = (info_id, index = 0, which, pic, eigen_vectors) => {
-  var sql = 'INSERT INTO Photo( photo_id, clue_or_lost_id, from_clue, photo, eigen_vector)\
-            VALUES(?,?,?,?,?);'
-
-  var params = [index, info_id, which, pic, eigen_vectors]
+  const sql = `INSERT INTO Photo( photo_id, clue_or_lost_id, from_clue, photo, eigen_vector)\
+            VALUES(${index},${info_id},${which},${pic},${eigen_vectors})`
 
   db_pool.getConnection((con_err, connection) => {
-    connection.query(sql, params, (err, res) => {
-      if (err) {
-        console.log('[INSERT ERROR] - ', err.message)
-      }
+    connection.query(sql, (err, res) => {
+      if (err) throw err
     })
     connection.release()
   })
 }
 
-//修改线索信息，暂不包含图片的修改
-exports.edit_clue = () => {
+exports.get_info = async (data, which) => {
+  let sql = "SELECT * FROM "
 
-  connection.connect();
 
-  var modSql = 'UPDATE Clue SET clue_time =2018-04-15 14:09:26, clue_description=这个是描述信息] WHERE clue_id = 2';
-  var modSqlParams = ['2', '1', '广东省广州市番禺区华南理工大学大学城校区C10', '2018-04-15 14:10:26', '这个是描述信息2'];
-  //改
-  connection.query(modSql, modSqlParams, function (err, result) {
-    if (err) {
-      console.log('[UPDATE ERROR] - ', err.message);
-      return;
-    }
-    console.log('--------------------------UPDATE----------------------------');
-    console.log('UPDATE affectedRows', result.affectedRows);
-    console.log('-----------------------------------------------------------------\n\n');
-  });
+  if (which == true) sql += "Clue "
+  else sql += "Lost "
 
-  //断开数据库连接
-  connection.end();
+  sql += "WHERE "
+  if (data['provider_id'] != undefined) {
+    sql += "provider_id = " + data['provider_id']
+  } else if (which) sql += "clue_id = " + data['clue_id']
+  else sql += "lost_id" + data['lost_id']
+
+  let fetch_data = () => {
+    return new Promise((resolve, reject) => {
+      db_pool.getConnection((conn_err, connection) => {
+        if (conn_err) throw conn_err
+        connection.query(sql, null, (err, res) => {
+          if (err) throw err
+          resolve(res)
+        })
+      })
+    })
+  }
+  let data = await fetch_data()
+  return data
+}
+
+exports.edit_lost = (lost_to_edit) => {
+  var sql = `UPDATE Lost \
+                SET name=${lost_to_edit['name']} , gender=${lost_to_edit['gender']}, birth_date=${lost_to_edit['birth_date']}, person_location=${lost_to_edit['person_location']}, \
+                    contact=${lost_to_edit['contact']}, contact_name=${lost_to_edit['contact_name']}, lost_description=${lost_to_edit['lost_description']}, \
+                    last_location=${lost_to_edit['last_location']}, lost_date=${lost_to_edit['lost_date']} \
+                WHERE lost_id = ${lost_to_edit['lost_id']}`
+
+  db_pool.getConnection((err, connection) => {
+    if (err) console.log('[CONNECT] - ', err.message)
+    connection.query(sql, function (err, result) {
+      if (err) {
+        console.log('[UPDATE] - ', err.message);
+      }
+    })
+    connection.release()
+  })
+}
+exports.edit_clue = (clue_to_edit) => {
+  var sql = `UPDATE Clue \
+                SET clue_location=${clue_to_edit['clue_location']}, clue_description=${clue_to_edit['clue_description']} \
+                WHERE clue_id = ${clue_to_edit['clue_id']}`
+
+  db_pool.getConnection((err, connection) => {
+    if (err) console.log('[CONNECT] - ', err.message)
+    connection.query(sql, function (err, result) {
+      if (err) {
+        console.log('[UPDATE] - ', err.message);
+      }
+    })
+    connection.release()
+  })
 }
 //增加新图片
 exports.edit_pic = () => {
@@ -162,5 +190,3 @@ exports.edit_pic = () => {
   //断开数据库连接
   connection.end();
 }
-
-//多次post没有办法保存用户的信息,除非使用缓存
