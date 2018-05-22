@@ -52,14 +52,14 @@ server.route([{
     method: 'POST',
     handler: (request, reply) => {
         const data = request.payload
-        return db.get_info(data, false)
+        return db.get_lost(data)
     }
 }, {
     path: '/get_clue',
     method: 'POST',
     handler: (request, reply) => {
         const data = request.payload
-        return db.get_info(data, true)
+        return db.get_clue(data)
     }
 }, {
     path: '/modify_clue',
@@ -88,7 +88,9 @@ server.route([{
 }
 ]);
 
+db.init()
 server.start()
+
 console.log('server is running on port 3000.')
 
 // const init = async () => {
