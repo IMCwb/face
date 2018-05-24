@@ -18,21 +18,36 @@ function check(data, type = 'lost') {
 server.route([{
     path: '/upload_lost',
     method: 'POST',
-    handler: (request, reply) => {
+    handler: async (request, h) => {
         var data = request.payload
         if (check(data, 'lost')) {
-            db.new_lost(data)
-            return reply.response('successful').code(200)
+            let res = await db.new_lost(data, h)
+            return h.response(res['insertId']).code(200)
         }
-        return reply.response('data format error').code(500)
+        else {
+            return reply.response('data format error').code(500)
+        }
     }
 }, {
     path: '/upload_clue',
     method: 'POST',
+    handler: async (request, reply) => {
+        var data = request.payload
+        if (check(data, 'clue')) {
+            let res = await db.new_clue(data, reply)
+            return h.response(res['insertId']).code(200)
+        }
+        else {
+            return reply.response('data format error').code(500)
+        }
+    }
+}, {
+    path: '/upload_image',
+    method: 'POST',
     handler: (request, reply) => {
         var data = request.payload
         if (check(data, 'clue')) {
-            db.new_clue(data)
+            db.upload_image(data)
             return reply.response('successful').code(200)
         }
         return reply.response('data format error').code(500)
@@ -40,12 +55,12 @@ server.route([{
 }, {
     path: '/modify_lost',
     method: 'POST',
-    handler: (request, reply) => {
+    handler: (request, h) => {
         lost_id = db.edit_lost(request.payload)
         if (check(data, 'lost')) {
-            return reply.response('successful').code(200)
+            return h.response('successful').code(200)
         }
-        return reply.response('data format error').code(500)
+        return h.response('data format error').code(500)
     }
 }, {
     path: '/get_lost',
