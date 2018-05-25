@@ -12,14 +12,14 @@ CREATE TABLE user(
 CREATE TABLE clue_photo(
     image_id        INT(30) UNSIGNED AUTO_INCREMENT,
     info_id         INT(30) UNSIGNED NOT NULL,
-    photo           TEXT NOT NULL,
+    photo           BLOB NOT NULL,
     eigen_vector    JSON NOT NULL,
     PRIMARY KEY(image_id)
 )ENGINE=InnoDB DEFAULT CHARSET=utf8;
 CREATE TABLE lost_photo(
     image_id        INT(30) UNSIGNED AUTO_INCREMENT,
     info_id         INT(30) UNSIGNED NOT NULL,
-    photo           TEXT NOT NULL,
+    photo           BLOB NOT NULL,
     eigen_vector    JSON NOT NULL,
     PRIMARY KEY(image_id)
 )ENGINE=InnoDB DEFAULT CHARSET=utf8;
@@ -52,8 +52,13 @@ CREATE TABLE possible_match(
     PRIMARY KEY(match_id)
 )ENGINE=InnoDB DEFAULT CHARSET=utf8;
 `
-exports.host = 'localhost'
-exports.user = 'root'
-exports.password = '0000'
-exports.port = '3306'
-exports.database = 'face'
+exports.db_host = 'localhost'
+exports.db_user = 'root'
+exports.db_password = '0000'
+exports.db_port = '3306'
+exports.db_default_database = 'face'
+
+exports.HOST = '120.79.57.154'
+exports.PATH = '/face_recog/'
+exports.METHOD = 'POST'
+exports.TOKEN = '1b9a5c4d73b2e45ff8477e554581f1ea'

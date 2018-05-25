@@ -11,96 +11,98 @@ const server = hapi.server({
 })
 
 //do format check according to the type
-function check(data, type = 'lost') {
-    return true;
-}
 
-server.route([{
-    path: '/upload_lost',
-    method: 'POST',
-    handler: async (request, h) => {
-        var data = request.payload
-        if (check(data, 'lost')) {
-            let res = await db.new_lost(data, h)
+server.route([
+    {
+        path: '/upload_lost',
+        method: 'POST',
+        handler: async (request, h) => {
+            const data = request.payload
+            const res = await db.new_lost(data)
             return h.response(res['insertId']).code(200)
         }
-        else {
-            return reply.response('data format error').code(500)
-        }
-    }
-}, {
-    path: '/upload_clue',
-    method: 'POST',
-    handler: async (request, reply) => {
-        var data = request.payload
-        if (check(data, 'clue')) {
-            let res = await db.new_clue(data, reply)
+    }, {
+        path: '/upload_clue',
+        method: 'POST',
+        handler: async (request, h) => {
+            const data = request.payload
+            const res = await db.new_clue(data)
             return h.response(res['insertId']).code(200)
         }
-        else {
-            return reply.response('data format error').code(500)
+    }, {
+        path: '/upload_image',
+        method: 'POST',
+        handler: async (request, h) => {
+            const data = request.payload
+            const res = await db.new_image(data)
+            return h.response(res).code(200)
         }
-    }
-}, {
-    path: '/upload_image',
-    method: 'POST',
-    handler: (request, reply) => {
-        var data = request.payload
-        if (check(data, 'clue')) {
-            db.upload_image(data)
+    }, {
+        path: '/get_lost',
+        method: 'POST',
+        handler: async (request, h) => {
+            const data = request.payload
+            const res = await db.get_lost(data)
+            return h.response(res).code(200)
+        }
+    }, {
+        path: '/get_clue',
+        method: 'POST',
+        handler: async (request, h) => {
+            const data = request.payload
+            const res = await db.get_clue(data)
+            return h.response(res).code(200)
+        }
+    }, {
+        path: '/get_image',
+        method: 'POST',
+        handler: async (request, h) => {
+            const data = request.payload
+            const res = await db.get_image(data)
+            res.forEach(element => {
+                element['photo'] = element['photo'].toString()
+            });
+            return h.response(res).code(200)
+        }
+    }, {
+        path: '/modify_lost',
+        method: 'POST',
+        handler: async (request, h) => {
+            const data = request.payload
+            const res = await db.edit_lost(data)
+            return h.response(res).code(200)
+        }
+    }, {
+        path: '/modify_clue',
+        method: 'POST',
+        handler: async (request, h) => {
+            const data = request.payload
+            const res = await db.edit_clue(data)
+            return h.response(res).code(200)
+        }
+    }, {
+        path: '/modify_image',
+        method: 'POST',
+        handler: async (request, h) => {
+            const data = request.payload
+            const res = await db.edit_image(data)
+            return h.response(res).code(200)
+        }
+    }, {
+        path: '/get_massage',
+        method: 'GET',
+        handler: (request, reply) => {
             return reply.response('successful').code(200)
         }
-        return reply.response('data format error').code(500)
-    }
-}, {
-    path: '/modify_lost',
-    method: 'POST',
-    handler: (request, h) => {
-        lost_id = db.edit_lost(request.payload)
-        if (check(data, 'lost')) {
-            return h.response('successful').code(200)
+    }, {
+        path: '/login',
+        method: 'POST',
+        handler: (request, reply) => {
+            const data = request.payload
+            db.new_user(data)
+            return reply.response('successful').code(200)
         }
-        return h.response('data format error').code(500)
     }
-}, {
-    path: '/get_lost',
-    method: 'POST',
-    handler: (request, reply) => {
-        const data = request.payload
-        return db.get_lost(data)
-    }
-}, {
-    path: '/get_clue',
-    method: 'POST',
-    handler: (request, reply) => {
-        const data = request.payload
-        return db.get_clue(data)
-    }
-}, {
-    path: '/modify_clue',
-    method: 'POST',
-    handler: (request, reply) => {
-        lost_id = db.edit_clue(request.payload)
-        if (check(data, 'clue')) {
-            return reply.response('data format error').code(500)
-        }
-        return reply.response('successful').code(200)
-    }
-}, {
-    path: '/get_massage',
-    method: 'GET',
-    handler: (request, reply) => {
-        return reply.response('successful').code(200)
-    }
-}, {
-    path: '/login',
-    method: 'POST',
-    handler: (request, reply) => {
-        const data = request.payload
-        db.new_user(data)
-        return reply.response('successful').code(200)
-    }
-}
 ]);
 
 db.init()

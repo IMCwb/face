@@ -4,22 +4,15 @@ const querystring = require('querystring')
 
 const config = require('./config')
 
-const HOST = '120.79.57.154'
-const PATH = '/face_recog/'
-const METHOD = 'POST'
-const TOKEN = '1b9a5c4d73b2e45ff8477e554581f1ea'
-
-const CLUE = 1
-const LOST = 0
-
-let pool = mysql.createPool({
-  host: config.host,
-  user: config.user,
-  password: config.password,
-  port: config.port,
-  database: config.database,
+const pool = mysql.createPool({
+  host: config.db_host,
+  user: config.db_user,
+  password: config.db_password,
+  port: config.db_port,
+  database: config.db_default_database,
   multipleStatements: true,
 })
+
 exports.do_sql = (sql) => {
   return new Promise((resolve, reject) => {
     pool.query(sql, (e, res) => {
@@ -53,27 +46,26 @@ exports.new_clue = (data) => {
   console.log("[NEW_CLUE]")
   return exports.do_sql(sql)
 }
-exports.new_image = async (info_id, which, image) => {
-  eigen_vectors = JSON.stringify(eigen_vectors)
-  const table = "clue_photo"
-  if (which == LOST) table = "lost_photo"
+exports.new_image = (data) => {
   let eigen_vector = null
-  // eigen_vector = await exports.upload_image(image)
-  const sql = `INSERT INTO ${table}(info_id,photo, eigen_vector)
-            VALUES(${info_id},"${image}",'${JSON.stringify(eigen_vector)}')`
-  await exports.do_sql(sql)
+  // eigen_vector = await exports.upload_image(data)
+  //TODO 如果直接用base64这边要修改
+  const sql = `INSERT INTO ${data['which'] + '_photo'}(info_id, photo, eigen_vector)
+            VALUES(${data['info_id']},"${data['image'].toString('base64')}",'${JSON.stringify(eigen_vector)}')`
+  console.log("[NEW_IMAGE]")
+  return exports.do_sql(sql)
 }
-exports.upload_image = async (image) => {
-  let image = image.toString('base64')
+exports.upload_image = (data) => {
+  let pic = data['image'].toString('base64')
   const data_to_send = querystring.stringify({
-    image: image,
-    img_name: photo_id,
-    access_token: TOKEN
+    image: pic,
+    img_name: data['info_id'],
+    access_token: config.TOKEN
   })
   const opt = {
-    host: HOST,
-    path: PATH,
-    method: METHOD,
+    host: config.HOST,
+    path: config.PATH,
+    method: config.METHOD,
     headers: {
       'Content-Type': 'application/x-www-form-urlencoded',
       'Content-Length': data_to_send.length
@@ -94,74 +86,77 @@ exports.upload_image = async (image) => {
     req.end()
   })
 }
-
 exports.get_clue = (data) => {
-  let sql = "SELECT * FROM Clue WHERE "
+  let sql = "SELECT * FROM clue WHERE "
   let str_attr = ["description", "location"]
   let num_attr = ["clue_id", "provider_id"]
-  str_attr.forEach(element => {
-    if (data[element]) sql += `${element} LIKE "${data[element]}" AND `
-  })
   num_attr.forEach(element => {
     if (data[element]) sql += `${element} = ${data[element]} AND `
   })
+  str_attr.forEach(element => {
+    if (data[element]) sql += `${element} LIKE "${data[element]}" AND `
+  })
   sql = sql.substring(0, sql.length - 4)
+  console.log("[GET_CLUE")
   return exports.do_sql(sql)
 }
-
-exports.get_lost = async (data) => {
-  let sql = "SELECT * FROM Lost WHERE "
+exports.get_lost = (data) => {
+  let sql = "SELECT * FROM lost WHERE "
   let str_attr = ["name", "person_location", "contact_name", "description", "last_location", "birthday", "since"]
   let num_attr = ["lost_id", "provider_id", "gender", "contact"]
-  str_attr.forEach(element => {
-    if (data[element]) sql += `${element} LIKE "${data[element]}" AND `
-  })
   num_attr.forEach(element => {
     if (data[element]) sql += `${element} = ${data[element]} AND `
   })
-  sql = sql.substring(0, sql.length - 4)
-  return exports.do_sql(sql)
-}
-
-exports.get_pic = (info_id, which) => {
-  which += "_photo"
-  sql = `SELECT * FROM ${which} WHERE info_id = ${info_id}`
-  return exports.do_sql(sql)
-}
-
-exports.edit_lost = (edit) => {
-  var sql = `
-  UPDATE Lost 
-    SET name=${edit['name']} , gender=${edit['gender']}, birth_date=${edit['birth_date']}, person_location=${edit['person_location']}, 
-        contact=${edit['contact']}, contact_name=${edit['contact_name']}, lost_description=${edit['lost_description']}, 
-        last_location=${edit['last_location']}, lost_date=${edit['lost_date']} 
-    WHERE lost_id = ${edit['lost_id']}`
-
-  pool.getConnection((e, connection) => {
-    if (e) console.log('[CONNECT] - ', e.message)
-    connection.query(sql, function (e, result) {
-      if (e) {
-        console.log('[UPDATE] - ', e.message);
-      }
-    })
-    connection.release()
+  str_attr.forEach(element => {
+    if (data[element]) sql += `${element} LIKE "${data[element]}" AND `
   })
-}
-
-exports.edit_clue = (clue) => {
-  let sql = `
-  UPDATE clue 
-    SET location="${clue['location']}", description="${clue['description']}"}
-    WHERE clue_id = ${clue['clue_id']}`
+  sql = sql.substring(0, sql.length - 4)
+  console.log("[GET_LOST]")
   return exports.do_sql(sql)
 }
-
-exports.edit_pic = (image) => {
-  let which = image['which'] + "_photo"
-  let pic = image['image']
-  let eigen_vector = exports.upload_image(pic)
-  let sql = `UPDATE ${which}
-    SET image=${pic}, eigen_vector=${JSON.stringify(eigen_vector)}
-    WHERE info_id=${image['info_id']}`
-    return exports.do_sql(sql)
+exports.get_image = (data) => {
+  sql = `SELECT * FROM ${data['which'] + "_photo"} WHERE info_id = ${data['info_id']}`
+  console.log("[GET_IMAGE]")
+  return exports.do_sql(sql)
+}
+exports.edit_lost = (lost) => {
+  let sql = "UPDATE lost SET "
+  let str_attr = ["name", "person_location", "contact_name", "description", "last_location", "birthday", "since"]
+  let num_attr = ["gender", "contact"]
+  num_attr.forEach(element => {
+    if (lost[element]) sql += `${element} = ${lost[element]},  `
+  })
+  str_attr.forEach(element => {
+    if (lost[element]) sql += `${element} = "${lost[element]}", `
+  })
+  sql = sql.substring(0, sql.length - 2)
+  sql += ` WHERE lost_id=${lost['lost_id']}`
+  return exports.do_sql(sql)
+}
+exports.edit_clue = (clue) => {
+  let sql = "UPDATE clue SET "
+  let str_attr = ["description", "location"]
+  str_attr.forEach(element => {
+    if (clue[element]) sql += `${element} = "${clue[element]}", `
+  })
+  sql = sql.substring(0, sql.length - 2)
+  sql += ` WHERE clue_id=${clue['clue_id']}`
+  return exports.do_sql(sql)
+}
+exports.edit_image = (image) => {
+  let sql
+  if (image['image'] == undefined) {
+    sql = `DELETE FROM ${image['which'] + "_photo"} WHERE info_id=${image['image_id']}`
+  } else {
+    let eigen_vector = null
+    sql = `UPDATE ${image['which'] + "_photo"}
+    SET photo="${image['image'].toString('base64')}", eigen_vector='${JSON.stringify(eigen_vector)}'
+    WHERE info_id=${image['image_id']}`
+  }
+  console.log(sql)
+  return exports.do_sql(sql)
+}
+exports.__match = () => {
+  //TODO 进行匹配的函数在每次进行插入图片的时候
+  //最后进行优化的时候将匹配放在显示进行
 }
