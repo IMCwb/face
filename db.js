@@ -4,6 +4,7 @@ const sequlize = new Sequelize(config.db_default_database, config.db_user, confi
   host: config.db_host,
   dialect: 'mysql',
   operatorsAliases: false,
+  // logging: false,
   pool: {
     max: 1000,
     min: 10,
@@ -11,42 +12,37 @@ const sequlize = new Sequelize(config.db_default_database, config.db_user, confi
     idle: 10000
   }
 })
-let _user, _clue, _lost, _match
-_user = sequlize.define('user', {
-  user_id: { type: Sequelize.CHAR(30), primaryKey: true }
-})
-_clue = sequlize.define('clue', {
-  clue_id: { type: Sequelize.INTEGER(30), primaryKey: true },
-  provider_id: { type: Sequelize.CHAR(30), primaryKey: true, references: { model: _user, key: 'user_id' } },
-  clue_info: { type: Sequelize.JSON, allowNull: false },
-  clue_photos: { type: Sequelize.JSON, allowNull: false }
-})
-_lost = sequlize.define('lost', {
-  lost_id: { type: Sequelize.INTEGER(30), primaryKey: true },
-  provider_id: { type: Sequelize.CHAR(30), allowNull: false, primaryKey: true, references: { model: _user, key: 'user_id' } },
-  lost_info: { type: Sequelize.JSON, allowNull: false },
-  contact: { type: Sequelize.JSON, allowNull: false },
-  lost_photos: { type: Sequelize.JSON, allowNull: false }
-})
-_match = sequlize.define('match', {
-  // uploader: { type: Sequelize.CHAR(30), allowNull: false, primaryKey: true, references: { model: _lost, key: 'provider_id' } },
-  lost_id: { type: Sequelize.INTEGER(30), primaryKey: true, references: { model: _lost, key: 'lost_id' } },
-  clue_id: { type: Sequelize.INTEGER(30), primaryKey: true, references: { model: _clue, key: 'clue_id' } },
-  // provider_id: { type: Sequelize.CHAR(30), allowNull: false, primaryKey: true, references: { model: _clue, key: 'provider_id' } },
-  possibility: { type: Sequelize.FLOAT, allowNull: false }
-})
 
-sequlize.sync()
-  .then(() => {
-  }
-  )
-  .catch(err => { console.error("[ERROR]", err) })
+exports.Users
+exports.Clues
+exports.Losts
+exports.Matchs
 
-// sequlize.sync()
-//   .then(_lost.findAll({
-//     where: {
-//       lost_id: 1
-//     }
-//   }).then(res => {
-//     console.log(res[0].dataValues)
-//   }))
+exports.init = () => {
+  exports.Users = sequlize.define('user', {
+    user_id: { type: Sequelize.CHAR(30), primaryKey: true }
+  })
+  exports.Clues = sequlize.define('clue', {
+    clue_id: { type: Sequelize.INTEGER(30), primaryKey: true, autoIncrement: true },
+    provider: { type: Sequelize.CHAR(30), primaryKey: true, references: { model: exports.Users, key: 'user_id' } },
+    clue_info: { type: Sequelize.JSON, allowNull: false },
+    clue_photos: { type: Sequelize.JSON, allowNull: true }
+  })
+  exports.Losts = sequlize.define('lost', {
+    lost_id: { type: Sequelize.INTEGER(30), primaryKey: true, autoIncrement: true },
+    provider: { type: Sequelize.CHAR(30), allowNull: false, primaryKey: true, references: { model: exports.Users, key: 'user_id' } },
+    lost_info: { type: Sequelize.JSON, allowNull: false },
+    contact: { type: Sequelize.JSON, allowNull: false },
+    lost_photos: { type: Sequelize.JSON, allowNull: true }
+  })
+  exports.Matchs = sequlize.define('match', {
+    lost_id: { type: Sequelize.INTEGER(30), primaryKey: true, references: { model: exports.Losts, key: 'lost_id' } },
+    clue_id: { type: Sequelize.INTEGER(30), primaryKey: true, references: { model: exports.Clues, key: 'clue_id' } },
+    possibility: { type: Sequelize.FLOAT, allowNull: false }
+  })
+  sequlize.sync()
+    .then(() => { })
+    .catch(err => { console.error("[ERROR]", err) })
+}
+exports.match = () => {
+}

@@ -1,6 +1,4 @@
 /node_modules/
 /.vscode/
 /test_doc/
-
-bash.bat
 test.js
