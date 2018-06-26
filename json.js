@@ -18,7 +18,11 @@ const lost = {
 const clue = {
     provider_id: 1,
     location: "京东",
-    description: "此男原来去拿快递了"
+    gender: 1,
+    description: "此男原来去拿快递了",
+    data: "2018-05-26",
+    contact: 13416349304,
+    contact_name: "陈先生"
 }
 //和上述一致，将lost_id改成clue_id
 
